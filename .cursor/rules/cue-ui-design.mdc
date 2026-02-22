@@ -1,0 +1,20 @@
+---
+description: Cue app UI — use design tokens and specs only; no ad-hoc styling
+globs: Cue/**/*.swift
+alwaysApply: false
+---
+
+# Cue UI: Design System Only
+
+When editing Cue screens (SwiftUI), follow the design system strictly.
+
+**Authority:** Read `docs/AI_UI_AGENT_BRIEF.md` and `docs/PROFESSIONAL_DESIGN_SPEC.md` (and `docs/UI_POLISH_SPEC.md` / `docs/ONBOARDING_VISUAL_SPEC.md` as needed). Use **only** tokens and components from `Cue/Cue/Design/`.
+
+**Must use:**
+- **Colors/fonts/spacing:** `CueColors`, `Font.Cue.*`, `CueLayout.*` — no raw `.font(.system(...))`, no magic numbers for padding/size.
+- **Elevation:** `.cueRaised()` or `.cueFloating()` (or `CueCard`) for cards/inputs — no one-off shadows or `Color(white:)` in views.
+- **Buttons:** `CuePrimaryButton` / `CueSecondaryButton`; min height 56pt, press scale 0.97 with spring.
+- **Screen structure:** Hero zone → Content zone → Action zone; one primary CTA; max content width 420pt for composed layouts.
+- **Empty/loading:** Headline + one line + CTA or skeleton; never raw "No X yet" or lone spinner.
+
+**Reference implementations:** `RoleSelectView`, `BriefCardView`, `CueComponents.swift`. Match their level of polish (elevation, typography, motion) on every screen.
