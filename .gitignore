@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Environment and secrets (never commit)
+.env
+.env.*
+!.env.example
+
+# Build output
+dist/
+build/
+*.xcuserstate
+
+# OS and IDE
+.DS_Store
+*.log
+.idea/
+.vscode/
+
+# Vercel
+.vercel
+
+# Local uploads (backend)
+backend/data/
