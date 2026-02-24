@@ -2,6 +2,7 @@
   "version": 2,
   "buildCommand": "cd backend && npm run build",
   "installCommand": "cd backend && npm install",
+  "outputDirectory": ".",
   "rewrites": [{ "source": "/(.*)", "destination": "/api" }],
   "functions": { "api/index.js": { "memory": 1024, "maxDuration": 30 } }
 }
