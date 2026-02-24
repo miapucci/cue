@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "framework": "other",
   "buildCommand": "cd backend && npm run build",
   "installCommand": "cd backend && npm install",
   "rewrites": [{ "source": "/(.*)", "destination": "/api" }],
