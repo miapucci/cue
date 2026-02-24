@@ -60,7 +60,10 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
     const alg = token ? getAlgFromToken(token) : null;
     // Always log rejection reason so Vercel logs show why 401 (expired, wrong secret, wrong project, etc.)
     console.warn('[auth] Token rejected:', msg, alg != null ? `(JWT alg: ${alg})` : '');
-    next(unauthorized('Invalid or expired token'));
+    // In debug mode, return the real reason in the 401 body so you can see it in Vercel response / app
+    const bodyMessage =
+      process.env['DEBUG_AUTH'] === '1' ? msg : 'Invalid or expired token';
+    next(unauthorized(bodyMessage));
   }
 }
 
