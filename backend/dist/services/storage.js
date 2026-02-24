@@ -5,7 +5,7 @@
 import { mkdirSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
-const UPLOAD_DIR = process.env['UPLOAD_DIR'] ?? join(process.cwd(), 'data', 'uploads');
+const UPLOAD_DIR = process.env['UPLOAD_DIR'] ?? (process.env['VERCEL'] === '1' ? '/tmp/uploads' : join(process.cwd(), 'data', 'uploads'));
 const UPLOAD_BASE_URL = process.env['UPLOAD_BASE_URL'] ?? 'http://localhost:3000/uploads';
 export function ensureUploadDir() {
     if (!existsSync(UPLOAD_DIR))

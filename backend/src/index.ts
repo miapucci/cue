@@ -20,7 +20,9 @@ import reviewsRouter from './routes/reviews.js';
 import messagesRouter from './routes/messages.js';
 
 const app = express();
-app.use(cors());
+// CORS: default allows all origins (fine for token-based API). Set CORS_ORIGIN to comma-separated list to restrict.
+const corsOrigin = process.env['CORS_ORIGIN']?.trim();
+app.use(cors(corsOrigin ? { origin: corsOrigin.split(',').map((s) => s.trim()).filter(Boolean) } : {}));
 app.use(express.json({ limit: '1mb' }));
 
 // Log every request so you can see if the app is hitting the backend

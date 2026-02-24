@@ -9,21 +9,21 @@ DROP POLICY IF EXISTS "Users can read own row" ON public.users;
 CREATE POLICY "Users can read own row"
   ON public.users FOR SELECT
   TO authenticated
-  USING (id = auth.uid()::text);
+  USING (id = (select auth.uid())::text);
 
 -- 3. Insert own row (e.g. right after sign-up; id must = auth.uid())
 DROP POLICY IF EXISTS "Users can insert own row" ON public.users;
 CREATE POLICY "Users can insert own row"
   ON public.users FOR INSERT
   TO authenticated
-  WITH CHECK (id = auth.uid()::text);
+  WITH CHECK (id = (select auth.uid())::text);
 
 -- 4. Update own row
 DROP POLICY IF EXISTS "Users can update own row" ON public.users;
 CREATE POLICY "Users can update own row"
   ON public.users FOR UPDATE
   TO authenticated
-  USING (id = auth.uid()::text)
-  WITH CHECK (id = auth.uid()::text);
+  USING (id = (select auth.uid())::text)
+  WITH CHECK (id = (select auth.uid())::text);
 
 -- Service role (backend) bypasses RLS; anon/authenticated are restricted by the above.

@@ -33,6 +33,7 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
       userId = supabase.sub.toLowerCase();
       const supabaseUser = await findUserById(userId);
       if (!supabaseUser) {
+        console.warn('[auth] Supabase JWT valid but user not in DB:', userId);
         next(unauthorized('User not found'));
         return;
       }
@@ -57,9 +58,8 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
     const header = req.headers['authorization'];
     const token = header?.startsWith('Bearer ') ? header.slice(7) : null;
     const alg = token ? getAlgFromToken(token) : null;
-    if (process.env.NODE_ENV !== 'production' || alg === 'RS256') {
-      console.warn('[auth] Token rejected:', msg, alg != null ? `(JWT alg: ${alg})` : '');
-    }
+    // Always log rejection reason so Vercel logs show why 401 (expired, wrong secret, wrong project, etc.)
+    console.warn('[auth] Token rejected:', msg, alg != null ? `(JWT alg: ${alg})` : '');
     next(unauthorized('Invalid or expired token'));
   }
 }

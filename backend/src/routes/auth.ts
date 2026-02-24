@@ -37,18 +37,25 @@ const router = Router();
 const EMAIL_CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const pendingEmailCodes = new Map<string, { code: string; role: Role; expiresAt: number }>();
 
+const MAX_EMAIL_LEN = 255;
+const MIN_PASSWORD_LEN = 8;
+const MAX_PASSWORD_LEN = 1024;
+
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
 function isValidEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  return email.length <= MAX_EMAIL_LEN && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-/** Dev/simulator: accept mock token and return test user + JWT so sign-in works without Apple. */
+/** Dev/simulator only: accept mock token so sign-in works without Apple. Never allowed in production. */
 function isMockOrTestToken(idToken: string): boolean {
+  const isProduction = process.env['VERCEL'] === '1' || process.env['NODE_ENV'] === 'production';
+  const allowMock = process.env['ALLOW_MOCK_APPLE_AUTH'] === '1' || (!isProduction && process.env['APPLE_CLIENT_ID'] == null);
+  if (!allowMock) return false;
   if (idToken.startsWith('mock_')) return true;
-  if (!process.env['APPLE_CLIENT_ID'] && idToken.length > 0 && idToken.length < 500) return true;
+  if (idToken.length > 0 && idToken.length < 500) return true; // dev fallback when Apple not configured
   return false;
 }
 
@@ -170,7 +177,8 @@ router.post('/email/register', async (req: Request, res: Response, next: NextFun
     const email = normalizeEmail(body?.email ?? '');
     if (!email || !isValidEmail(email)) throw validation('Valid email is required');
     const password = typeof body?.password === 'string' ? body.password : '';
-    if (password.length < 8) throw validation('Password must be at least 8 characters');
+    if (password.length < MIN_PASSWORD_LEN) throw validation('Password must be at least 8 characters');
+    if (password.length > MAX_PASSWORD_LEN) throw validation('Password too long');
     const role = body.role as Role;
     if (role !== 'creator' && role !== 'talent') throw validation('role must be creator or talent');
 
@@ -207,6 +215,7 @@ router.post('/email/login', async (req: Request, res: Response, next: NextFuncti
     if (!email || !isValidEmail(email)) throw validation('Valid email is required');
     const password = typeof body?.password === 'string' ? body.password : '';
     if (!password) throw validation('Password is required');
+    if (password.length > MAX_PASSWORD_LEN) throw validation('Invalid email or password');
     const role = body.role as Role;
     if (role !== 'creator' && role !== 'talent') throw validation('role must be creator or talent');
 
