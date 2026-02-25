@@ -109,12 +109,17 @@ export async function verifySupabaseJWT(token: string): Promise<{ sub: string }>
     }
     const base = url.replace(/\/$/, '');
     const jwksUrl = `${base}/auth/v1/.well-known/jwks.json`;
-    const JWKS = jose.createRemoteJWKSet(new URL(jwksUrl));
-    // Verify signature only (omit issuer/audience so Supabase token iss/aud don't cause 401)
-    const { payload: verified } = await jose.jwtVerify(token, JWKS);
-    const sub = verified.sub;
-    if (!sub || typeof sub !== 'string') throw new Error('Invalid payload');
-    return { sub };
+    try {
+      const JWKS = jose.createRemoteJWKSet(new URL(jwksUrl));
+      const { payload: verified } = await jose.jwtVerify(token, JWKS);
+      const sub = verified.sub;
+      if (!sub || typeof sub !== 'string') throw new Error('Invalid payload');
+      return { sub };
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e);
+      console.warn('[auth] Supabase JWT verification failed:', detail);
+      throw new Error(`Supabase JWT: ${detail}`);
+    }
   }
 
   throw new Error(`Unsupported JWT alg: ${alg}`);
