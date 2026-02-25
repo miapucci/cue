@@ -60,9 +60,9 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
     const alg = token ? getAlgFromToken(token) : null;
     // Always log rejection reason so Vercel logs show why 401 (expired, wrong secret, wrong project, etc.)
     console.warn('[auth] Token rejected:', msg, alg != null ? `(JWT alg: ${alg})` : '');
-    // In debug mode, return the real reason in the 401 body so you can see it in Vercel response / app
+    // Return the real reason in 401 body so the app can show it (helps debug Supabase JWT issues). For production, set DEBUG_AUTH=0 to hide.
     const bodyMessage =
-      process.env['DEBUG_AUTH'] === '1' ? msg : 'Invalid or expired token';
+      process.env['DEBUG_AUTH'] === '0' ? 'Invalid or expired token' : msg;
     next(unauthorized(bodyMessage));
   }
 }
