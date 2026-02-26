@@ -21,6 +21,7 @@ export async function requireAuth(req, _res, next) {
             userId = supabase.sub.toLowerCase();
             const supabaseUser = await findUserById(userId);
             if (!supabaseUser) {
+                console.warn('[auth] Supabase JWT valid but user not in DB:', userId);
                 next(unauthorized('User not found'));
                 return;
             }
@@ -42,15 +43,24 @@ export async function requireAuth(req, _res, next) {
         next();
     }
     catch (err) {
-        const msg = err instanceof Error ? err.message : 'Invalid or expired token';
         const header = req.headers['authorization'];
         const token = header?.startsWith('Bearer ') ? header.slice(7) : null;
         const alg = token ? getAlgFromToken(token) : null;
-        if (process.env.NODE_ENV !== 'production' || alg === 'RS256') {
-            console.warn('[auth] Token rejected:', msg, alg != null ? `(JWT alg: ${alg})` : '');
-        }
-        next(unauthorized('Invalid or expired token'));
+        const msg = messageFromError(err);
+        // Log full err so Vercel logs show exactly what was thrown (type, message, stack)
+        console.warn('[auth] Token rejected:', msg, alg != null ? `(JWT alg: ${alg})` : '', '| err type:', err === null ? 'null' : err === undefined ? 'undefined' : err?.constructor?.name ?? typeof err);
+        next(unauthorized(msg));
     }
+}
+function messageFromError(err) {
+    if (err instanceof Error)
+        return err.message;
+    if (typeof err === 'string')
+        return err;
+    if (err && typeof err === 'object' && 'message' in err && typeof err.message === 'string') {
+        return err.message;
+    }
+    return String(err ?? 'Auth failed (no details - check server logs)');
 }
 export function requireRole(role) {
     return (req, _res, next) => {

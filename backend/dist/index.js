@@ -16,6 +16,8 @@ import submissionsRouter from './routes/submissions.js';
 import earningsRouter from './routes/earnings.js';
 import reviewsRouter from './routes/reviews.js';
 import messagesRouter from './routes/messages.js';
+import { verify, verifySupabaseJWT, getAlgFromToken } from './auth/jwt.js';
+import { findUserById } from './db/index.js';
 const app = express();
 // CORS: default allows all origins (fine for token-based API). Set CORS_ORIGIN to comma-separated list to restrict.
 const corsOrigin = process.env['CORS_ORIGIN']?.trim();
@@ -27,6 +29,40 @@ app.use((req, _res, next) => {
     next();
 });
 app.use('/auth', authRouter);
+// Debug: GET /debug-auth with Authorization: Bearer <token> returns exact auth error or { ok, userId }.
+// Use from curl/Postman to see why token fails without going through the app.
+app.get('/debug-auth', async (req, res) => {
+    const header = req.headers['authorization'];
+    const token = header?.startsWith('Bearer ') ? header.slice(7) : null;
+    if (!token) {
+        return res.status(401).json({ error: 'Missing Authorization: Bearer <token>' });
+    }
+    const alg = getAlgFromToken(token);
+    try {
+        try {
+            const payload = verify(token);
+            const user = await findUserById(payload.userId);
+            if (!user) {
+                return res.status(401).json({ error: 'User not found', userId: payload.userId, alg });
+            }
+            return res.json({ ok: true, userId: payload.userId, source: 'session', alg });
+        }
+        catch {
+            const supabase = await verifySupabaseJWT(token);
+            const userId = supabase.sub.toLowerCase();
+            const user = await findUserById(userId);
+            if (!user) {
+                return res.status(401).json({ error: 'User not found', userId, alg });
+            }
+            return res.json({ ok: true, userId, source: 'Supabase', alg });
+        }
+    }
+    catch (err) {
+        const msg = err instanceof Error ? err.message : typeof err === 'string' ? err : String(err);
+        console.warn('[debug-auth]', msg, 'alg:', alg);
+        return res.status(401).json({ error: msg, alg });
+    }
+});
 app.use('/me', requireAuth, meRouter);
 app.use('/briefs', requireAuth, briefsRouter);
 app.use('/submissions', requireAuth, submissionsRouter);

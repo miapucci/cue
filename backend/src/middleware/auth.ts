@@ -54,15 +54,29 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
     req.role = role;
     next();
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Invalid or expired token';
     const header = req.headers['authorization'];
     const token = header?.startsWith('Bearer ') ? header.slice(7) : null;
     const alg = token ? getAlgFromToken(token) : null;
-    // Always log rejection reason so Vercel logs show why 401 (expired, wrong secret, wrong project, etc.)
-    console.warn('[auth] Token rejected:', msg, alg != null ? `(JWT alg: ${alg})` : '');
-    // Always return real reason in 401 body until auth is fixed (remove for production if you want to hide)
+    const msg = messageFromError(err);
+    // Log full err so Vercel logs show exactly what was thrown (type, message, stack)
+    console.warn(
+      '[auth] Token rejected:',
+      msg,
+      alg != null ? `(JWT alg: ${alg})` : '',
+      '| err type:',
+      err === null ? 'null' : err === undefined ? 'undefined' : (err as Error)?.constructor?.name ?? typeof err
+    );
     next(unauthorized(msg));
   }
+}
+
+function messageFromError(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === 'string') return err;
+  if (err && typeof err === 'object' && 'message' in err && typeof (err as { message: unknown }).message === 'string') {
+    return (err as { message: string }).message;
+  }
+  return String(err ?? 'Auth failed (no details - check server logs)');
 }
 
 export function requireRole(role: Role) {
